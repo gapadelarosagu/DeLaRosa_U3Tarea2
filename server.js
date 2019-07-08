@@ -4,6 +4,10 @@ const morgan = require('morgan');//sirve para visualizar las peticiones que hace
 const wagner = require('wagner-core'); //inyector de dependencias, pone todos los modelos disponibles
 const path = require('path');
 
+const _config = require('./_config');
+const expressJWT = require('express-jwt');
+
+
 let app = express(); //se instancia el servidor
 
 require('./models/models')(wagner);
@@ -21,6 +25,24 @@ app.use(function(req,res,next){
 });
 
 const urlBase ="/api/v1/"; 
+
+const jwtOptions = {
+    path: [/^\/api\/v1\/usuarios\/login\/.*/]
+};
+
+app.use(expressJWT({secret:_config.SECRETJWT}).unless(jwtOptions));/*se protegen las rutas con una palabra secreta, en el unless se dice cuales no estan protegidas*/
+
+app.use(function(err,req,res,next){
+    if(err.name =="UnathorizedError"){
+        res.status(err.status).send({
+            code:err.status,
+            message:err.message,
+            details:err.code
+        });
+    }else{
+        next();
+    }
+}); //para controlar el error cuando una ruta no esta autorizada
 
 const user = require('./routers/user.router')(wagner); //ruta de los usuarios
 const brand = require('./routers/brand.router')(wagner); //ruta de los brand

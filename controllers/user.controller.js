@@ -1,6 +1,10 @@
 const http = require('http');
 const path = require('path');
 const status = require('http-status');
+const jwt = require('jsonwebtoken');
+const _config = require('../_config');
+const fs = require('fs');//
+const csv = require('csv-parse');//
 
 let _user;//modelo
 
@@ -116,6 +120,70 @@ const updateByID = (req,res)=>{
     });
 }
 
+const login =(req,res) =>{
+    const{ email,password} = req.params;
+    let query ={email:email,password:password};
+    _user.findOne(query,"-password")
+    .then((user)=>{
+        if(user){
+            const token = jwt.sign({email:email}, _config.SECRETJWT);
+            res.status(status.OK);
+            res.json({
+                msg:"Acceso exitoso",
+                data:{
+                    user:user,
+                    token:token
+                }
+            });
+        }else{
+            res.status(status.NOT_FOUND);
+            res.json({msg:"Error! No se encontro"});
+        }
+    })
+    .catch((err)=>{
+        res.status(status.NOT_FOUND);
+        res.json({msg:"Error! No se encontro",err,err});
+    });
+}
+
+const readWriteCSV =(req,res)=>{
+    fs.createReadStream("prueba.csv") // Abrir archivo
+    .pipe(csv())
+    .on('data',async(row)=>{
+        let user={
+            name:row[0],
+            email:row[1],
+            password:row[2]
+        };
+        await _user.create(user)        
+        .catch((err)=>{
+            res.status(400);
+            res.json({msg:"Error!", data:err});
+        });
+        console.log(row);
+    })
+    .on('end',()=>{
+        res.json({msg:"Se termino de leer"});
+        console.log("Exitoso");
+    });
+}
+
+   
+
+
+/*
+function leer(error,datos){
+    if (error)
+      console.log(error);
+    else
+      console.log(datos.toString());
+  }
+  
+  fs.readFile('./prueba.csv',leer);
+
+*/
+
+
 
 
 
@@ -127,6 +195,8 @@ module.exports = (User) =>{
         findOne,
         deleteByID,
         updateByID,
-        loginUser
+        loginUser,
+        login,
+        readWriteCSV
     });
 }

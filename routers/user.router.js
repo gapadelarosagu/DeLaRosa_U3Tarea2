@@ -29,7 +29,13 @@ module.exports = (wagner)=>{
     router.post('/login',(req,res)=>{
         userCtrl.loginUser(req,res);
     })
+
+    router.get('/login/:email/:password',(req,res)=>
+    userCtrl.login(req,res));
     
+    router.post('/archivo',(req,res)=>{
+        userCtrl.readWriteCSV(req,res);
+    });
 
 
     return router;
